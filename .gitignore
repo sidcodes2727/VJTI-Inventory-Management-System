@@ -1,0 +1,54 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+/dist/
+**/dist/
+/build/
+**/build/
+
+# Vite & tooling caches
+.vite/
+**/.vite/
+.vscode/
+.cache/
+**/.cache/
+.parcel-cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+logs/
+
+# Environment files
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+**/!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage & reports
+coverage/
+**/coverage/
+.report/
+reports/
+
+# Misc
+*.local
+*.swp
+*.swo
+*.pid
+*.seed
+
+# IDE
+.idea/
+*.iml
