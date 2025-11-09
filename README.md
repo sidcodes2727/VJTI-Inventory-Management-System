@@ -1,7 +1,7 @@
 # 👋 Hi there!
 
 <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="50" alt="Waving Hand">  
-Welcome to my **Inventory Management System** project repository!  
+Welcome to my Inventory Management System project repository!  
 
 ---
 
