@@ -54,22 +54,43 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded border p-4">
-          <div className="text-sm text-gray-600">Total Inventory</div>
-          <div className="text-2xl font-semibold">{totals.total}</div>
+        <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Total Inventory</div>
+              <div className="text-3xl font-semibold tracking-tight">{totals.total}</div>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-vjtiBlue/10 text-vjtiBlue grid place-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M3 3h18v4H3z"/><path d="M7 7v14"/><path d="M17 7v14"/><path d="M3 11h18"/></svg>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded border p-4">
-          <div className="text-sm text-gray-600">Working</div>
-          <div className="text-2xl font-semibold text-green-600">{totals.working}</div>
+        <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Working</div>
+              <div className="text-3xl font-semibold text-green-600 tracking-tight">{totals.working}</div>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-green-100 text-green-600 grid place-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded border p-4">
-          <div className="text-sm text-gray-600">Damaged + Lost</div>
-          <div className="text-2xl font-semibold text-red-600">{totals.damaged + totals.lost}</div>
+        <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Damaged + Lost</div>
+              <div className="text-3xl font-semibold text-red-600 tracking-tight">{totals.damaged + totals.lost}</div>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-red-100 text-red-600 grid place-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded border p-4 mb-6">
-        <h3 className="font-semibold mb-2">Inventory by Lab</h3>
+      <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5 mb-6">
+        <h3 className="font-semibold mb-3 text-gray-900">Inventory by Lab</h3>
         {barDataSorted.length === 0 ? (
           <div className="h-40 grid place-items-center text-gray-500 text-sm">No data to display</div>
         ) : (
@@ -91,8 +112,8 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div className="bg-white rounded border p-4">
-        <h3 className="font-semibold mb-2">Working vs Damaged vs Lost</h3>
+      <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+        <h3 className="font-semibold mb-3 text-gray-900">Working vs Damaged vs Lost</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

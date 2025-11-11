@@ -77,35 +77,41 @@ export default function InventoryOverview() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 className="text-xl font-semibold">Inventory Overview</h2>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 className="text-2xl font-semibold tracking-tight text-gray-900">Inventory Overview</h2>
         {user.role === 'admin' && (
-          <select className="border rounded px-3 py-2 bg-white w-full sm:w-auto" value={selectedLab} onChange={(e)=>setSelectedLab(e.target.value)}>
+          <select
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-vjtiGold focus:ring-2 focus:ring-vjtiGold/60 w-full sm:w-auto"
+            value={selectedLab}
+            onChange={(e)=>setSelectedLab(e.target.value)}
+          >
             <option value="">All Labs</option>
             {labs.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
           </select>
         )}
       </div>
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <Table
-          columns={[
-            { key: 'name', title: 'Item' },
-            { key: 'category', title: 'Category' },
-            { key: 'lab', title: 'Lab', render: (_, r) => r.labId?.name || '-' },
-            { key: 'totalCount', title: 'Total' },
-            { key: 'workingCount', title: 'Working' },
-            { key: 'damagedCount', title: 'Damaged' },
-            { key: 'lostCount', title: 'Lost' },
-            { key: 'actions', title: 'Actions', render: (_, r) => (
-              canEdit ? <button className="text-vjtiBlue hover:underline" onClick={()=>openEdit(r)}>Update Status</button> : null
-            )}
-          ]}
-          data={items}
-        />
-      )}
+      <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+        {loading ? (
+          <div className="h-40 grid place-items-center text-gray-500 text-sm">Loading...</div>
+        ) : (
+          <Table
+            columns={[
+              { key: 'name', title: 'Item' },
+              { key: 'category', title: 'Category' },
+              { key: 'lab', title: 'Lab', render: (_, r) => r.labId?.name || '-' },
+              { key: 'totalCount', title: 'Total' },
+              { key: 'workingCount', title: 'Working' },
+              { key: 'damagedCount', title: 'Damaged' },
+              { key: 'lostCount', title: 'Lost' },
+              { key: 'actions', title: 'Actions', render: (_, r) => (
+                canEdit ? <button className="px-2 py-1 rounded bg-vjtiBlue/10 text-vjtiBlue hover:bg-vjtiBlue/15" onClick={()=>openEdit(r)}>Update Status</button> : null
+              )}
+            ]}
+            data={items}
+          />
+        )}
+      </div>
 
       <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title={`Update Status: ${editItem?.name}`} footer={
         <>

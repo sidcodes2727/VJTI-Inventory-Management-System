@@ -45,9 +45,11 @@ export default function LabDashboard() {
   return (
     <Layout>
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold">My Inventory</h2>
-          {loading ? 'Loading...' : (
+        <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+          <h2 className="text-lg font-semibold mb-3 text-gray-900">My Inventory</h2>
+          {loading ? (
+            <div className="h-40 grid place-items-center text-gray-500 text-sm">Loading...</div>
+          ) : (
             <Table
               columns={[
                 { key: 'name', title: 'Item' },
@@ -57,15 +59,15 @@ export default function LabDashboard() {
                 { key: 'damagedCount', title: 'Damaged' },
                 { key: 'lostCount', title: 'Lost' },
                 { key: 'actions', title: 'Actions', render: (_, r) => (
-                  <button onClick={()=>openRequest(r)} className="text-vjtiBlue hover:underline">Request Stock</button>
+                  <button onClick={()=>openRequest(r)} className="px-2 py-1 rounded bg-vjtiBlue/10 text-vjtiBlue hover:bg-vjtiBlue/15">Request Stock</button>
                 ) }
               ]}
               data={items}
             />
           )}
         </div>
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold">My Requests</h2>
+        <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+          <h2 className="text-lg font-semibold mb-3 text-gray-900">My Requests</h2>
           <Table
             columns={[
               { key: 'item', title: 'Item', render: (_, r) => `${r.itemId?.name} (${r.itemId?.category})` },

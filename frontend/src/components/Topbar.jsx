@@ -4,10 +4,14 @@ import logo from '../assets/logo.webp'
 import titleImg from '../assets/image.png'
 import adminAvatar from '../assets/admin.png'
 import labAvatar from '../assets/lab.png'
+import { useState } from 'react'
+import Modal from './Modal.jsx'
 
 export default function Topbar({ onMenu }) {
   const { user, logout } = useAuth()
+  const [confirmOpen, setConfirmOpen] = useState(false)
   return (
+    <>
     <header className="h-16 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-40 flex items-center justify-between px-6 shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <button type="button" onClick={onMenu} className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition" aria-label="Open menu">
@@ -34,11 +38,25 @@ export default function Topbar({ onMenu }) {
           ) : null}
           <span>{user?.name} ({user?.role})</span>
         </div>
-        <button onClick={logout} className="text-sm px-3 py-1.5 bg-vjtiBlue text-white rounded shadow-sm hover:shadow-md hover:bg-vjtiBlue/90 active:scale-[0.98] transition inline-flex items-center gap-1 flex-shrink-0">
+        <button onClick={() => setConfirmOpen(true)} className="text-sm px-3 py-1.5 bg-vjtiBlue text-white rounded shadow-sm hover:shadow-md hover:bg-vjtiBlue/90 active:scale-[0.98] transition inline-flex items-center gap-1 flex-shrink-0">
           <Icon.Logout />
           <span>Logout</span>
         </button>
       </div>
     </header>
+    <Modal
+      open={confirmOpen}
+      onClose={() => setConfirmOpen(false)}
+      title="Confirm Logout"
+      footer={
+        <>
+          <button onClick={() => setConfirmOpen(false)} className="px-3 py-1.5 rounded border">Cancel</button>
+          <button onClick={logout} className="px-3 py-1.5 rounded bg-vjtiBlue text-white">Logout</button>
+        </>
+      }
+    >
+      <p className="text-sm text-gray-700">Are you sure you want to log out?</p>
+    </Modal>
+    </>
   )
 }
