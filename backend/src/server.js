@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.js';
 import labRoutes from './routes/labs.js';
 import itemRoutes from './routes/items.js';
 import requestRoutes from './routes/requests.js';
+import complaintRoutes from './routes/complaints.js';
+import path from 'path';
 
 dotenv.config();
 
@@ -15,6 +17,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/uploads', express.static(path.resolve('uploads')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
@@ -24,6 +27,7 @@ app.use('/auth', authRoutes);
 app.use('/labs', labRoutes);
 app.use('/items', itemRoutes);
 app.use('/requests', requestRoutes);
+app.use('/complaints', complaintRoutes);
 
 app.use((err, req, res, next) => {
   const status = err.status || 500;

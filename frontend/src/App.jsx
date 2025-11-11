@@ -11,6 +11,7 @@ import StockDistribution from './pages/StockDistribution.jsx'
 import RequestManagement from './pages/RequestManagement.jsx'
 import LabDashboard from './pages/LabDashboard.jsx'
 import Users from './pages/Users.jsx'
+import AdminComplaints from './pages/AdminComplaints.jsx'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="inventory" element={<InventoryOverview />} />
             <Route path="distribute" element={<StockDistribution />} />
             <Route path="requests" element={<RequestManagement />} />
+            <Route path="complaints" element={<AdminComplaints />} />
             <Route path="users" element={<Users />} />
           </Route>
 

@@ -32,6 +32,7 @@ export default function Sidebar() {
             <NavLink to="/admin/inventory" label="Inventory" icon={Icon.Inventory} />
             <NavLink to="/admin/distribute" label="Distribute Stock" icon={Icon.Transfer} />
             <NavLink to="/admin/requests" label="Requests" icon={Icon.Requests} />
+            <NavLink to="/admin/complaints" label="Complaints" icon={Icon.Requests} />
             <NavLink to="/admin/users" label="Users" icon={Icon.Users} />
           </>
         ) : (
