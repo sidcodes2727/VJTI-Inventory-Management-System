@@ -7,7 +7,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed/seed.js"
+    "seed": "node src/seed/seed.js",
+    "clear": "node src/seed/clear.js",
+    "add:admin": "node src/seed/addAdmin.js",
+    "seed:computerlab": "node src/seed/seedComputerLab.js",
+    "seed:labs:custom": "node src/seed/seedLabsCustom.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
