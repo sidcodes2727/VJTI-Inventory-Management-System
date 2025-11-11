@@ -8,6 +8,7 @@ import labRoutes from './routes/labs.js';
 import itemRoutes from './routes/items.js';
 import requestRoutes from './routes/requests.js';
 import complaintRoutes from './routes/complaints.js';
+import maintenanceRoutes from './routes/maintenance.js';
 import path from 'path';
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/labs', labRoutes);
 app.use('/items', itemRoutes);
 app.use('/requests', requestRoutes);
 app.use('/complaints', complaintRoutes);
+app.use('/maintenance', maintenanceRoutes);
 
 app.use((err, req, res, next) => {
   const status = err.status || 500;

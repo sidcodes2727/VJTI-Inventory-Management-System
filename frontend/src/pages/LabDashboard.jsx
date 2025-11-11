@@ -4,6 +4,7 @@ import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import api from '../utils/api.js'
 import { toast } from 'sonner'
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, CartesianGrid } from 'recharts'
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 export default function LabDashboard() {
@@ -20,6 +21,18 @@ export default function LabDashboard() {
   const [cSeverity, setCSeverity] = useState('low')
   const [cItemId, setCItemId] = useState('')
   const [cFiles, setCFiles] = useState([])
+  const [sumStart, setSumStart] = useState(()=>{
+    const d = new Date(); d.setMonth(d.getMonth()-6); d.setDate(1); return d.toISOString().slice(0,10)
+  })
+  const [sumEnd, setSumEnd] = useState(()=> new Date().toISOString().slice(0,10))
+  const [summary, setSummary] = useState({ monthlyCost: [], byType: [], byCategory: [] })
+  const [mOpen, setMOpen] = useState(false)
+  const [mItemId, setMItemId] = useState('')
+  const [mDate, setMDate] = useState(()=> new Date().toISOString().slice(0,10))
+  const [mCost, setMCost] = useState('')
+  const [mType, setMType] = useState('repair')
+  const [mVendor, setMVendor] = useState('')
+  const [mNotes, setMNotes] = useState('')
 
   const loadItems = async () => {
     setLoading(true)
@@ -39,7 +52,24 @@ export default function LabDashboard() {
     setComplaints(data)
   }
 
+  const loadSummary = async () => {
+    try {
+      const { data } = await api.get('/maintenance/summary', { params: { start: sumStart, end: sumEnd } })
+      setSummary({
+        monthlyCost: (data.monthlyCost||[]).map(r=>({
+          ym: `${String(r._id.y).padStart(4,'0')}-${String(r._id.m).padStart(2,'0')}`,
+          total: r.total
+        })),
+        byType: (data.byType||[]).map(r=>({ name: r._id, value: r.total })),
+        byCategory: (data.byCategory||[]).map(r=>({ name: r._id, total: r.total }))
+      })
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed to load maintenance summary')
+    }
+  }
+
   useEffect(() => { loadItems(); loadMyRequests(); loadComplaints() }, [])
+  useEffect(() => { loadSummary() }, [sumStart, sumEnd])
 
   const openRequest = (it) => { setReqItem(it); setQty(1); setReqOpen(true) }
 
@@ -74,6 +104,68 @@ export default function LabDashboard() {
               } catch (e) { toast.error(e?.response?.data?.message || 'Export failed') }
             }} className="px-2 py-1 rounded border text-sm">Export CSV</button>
           </div>
+
+      <Modal open={mOpen} onClose={()=>setMOpen(false)} title="Add Maintenance Record" footer={
+        <>
+          <button onClick={()=>setMOpen(false)} className="px-3 py-1.5 rounded border">Cancel</button>
+          <button onClick={async ()=>{
+            if (!mItemId) return toast.error('Select an item')
+            if (!mDate) return toast.error('Select a date')
+            const cost = Number(mCost)
+            if (!isFinite(cost) || cost < 0) return toast.error('Enter a valid cost')
+            try {
+              await api.post('/maintenance', { itemId: mItemId, date: mDate, cost, type: mType, vendor: mVendor, notes: mNotes })
+              toast.success('Maintenance added')
+              setMOpen(false)
+              loadSummary()
+            } catch (e) {
+              toast.error(e?.response?.data?.message || 'Failed to add maintenance')
+            }
+          }} className="px-3 py-1.5 rounded bg-vjtiBlue text-white">Save</button>
+        </>
+      }>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm mb-1">Item</label>
+            <select className="w-full border rounded px-3 py-2 bg-white" value={mItemId} onChange={e=>setMItemId(e.target.value)}>
+              <option value="">-- Select Item --</option>
+              {items.map(it => (
+                <option key={it._id} value={it._id}>{it.name} ({it.category})</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm mb-1">Date</label>
+              <input type="date" className="w-full border rounded px-3 py-2" value={mDate} onChange={e=>setMDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Cost</label>
+              <input type="number" min={0} step="0.01" className="w-full border rounded px-3 py-2" value={mCost} onChange={e=>setMCost(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm mb-1">Type</label>
+              <select className="w-full border rounded px-3 py-2 bg-white" value={mType} onChange={e=>setMType(e.target.value)}>
+                <option value="repair">Repair</option>
+                <option value="calibration">Calibration</option>
+                <option value="service">Service</option>
+                <option value="replacement">Replacement</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Vendor</label>
+              <input className="w-full border rounded px-3 py-2" value={mVendor} onChange={e=>setMVendor(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Notes</label>
+            <textarea className="w-full border rounded px-3 py-2" rows={3} value={mNotes} onChange={e=>setMNotes(e.target.value)} />
+          </div>
+        </div>
+      </Modal>
           {loading ? (
             <div className="h-40 grid place-items-center text-gray-500 text-sm">Loading...</div>
           ) : (
@@ -105,6 +197,57 @@ export default function LabDashboard() {
             ]}
             data={myRequests}
           />
+        </div>
+      </div>
+
+      <div className="mt-6 bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Maintenance Cost</h2>
+          <div className="flex items-center gap-2 text-sm">
+            <input type="date" className="border rounded px-2 py-1" value={sumStart} onChange={e=>setSumStart(e.target.value)} />
+            <span>to</span>
+            <input type="date" className="border rounded px-2 py-1" value={sumEnd} onChange={e=>setSumEnd(e.target.value)} />
+            <button onClick={()=>{ setMItemId(''); setMDate(new Date().toISOString().slice(0,10)); setMCost(''); setMType('repair'); setMVendor(''); setMNotes(''); setMOpen(true) }} className="ml-2 px-3 py-1.5 rounded bg-vjtiBlue text-white">Add Maintenance</button>
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={summary.monthlyCost} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="ym" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={false} name="Total Cost" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip />
+                <Legend />
+                <Pie data={summary.byType} dataKey="value" nameKey="name" outerRadius={80}>
+                  {summary.byType.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={["#2563eb","#16a34a","#f59e0b","#ef4444","#6b7280"][index%5]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={summary.byCategory} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#10b981" name="By Category" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 

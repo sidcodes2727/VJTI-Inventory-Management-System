@@ -1,11 +1,15 @@
 import Layout from '../components/Layout.jsx'
 import { useEffect, useState } from 'react'
 import api from '../utils/api.js'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts'
 
 export default function AdminDashboard() {
   const [items, setItems] = useState([])
   const [labs, setLabs] = useState([])
+  const [sumStart, setSumStart] = useState(()=>{ const d=new Date(); d.setMonth(d.getMonth()-11); d.setDate(1); return d.toISOString().slice(0,10) })
+  const [sumEnd, setSumEnd] = useState(()=> new Date().toISOString().slice(0,10))
+  const [sumLabId, setSumLabId] = useState('')
+  const [maintenance, setMaintenance] = useState({ monthlyCost: [], byLab: [], byType: [], topItems: [], byCategory: [] })
 
   useEffect(() => {
     const load = async () => {
@@ -18,6 +22,21 @@ export default function AdminDashboard() {
     }
     load()
   }, [])
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      const params = { start: sumStart, end: sumEnd }
+      if (sumLabId) params.labId = sumLabId
+      const { data } = await api.get('/maintenance/summary', { params })
+      const monthlyCost = (data.monthlyCost||[]).map(r=>({ ym: `${String(r._id.y).padStart(4,'0')}-${String(r._id.m).padStart(2,'0')}`, total: r.total }))
+      const byLab = (data.byLab||[]).map(r=>({ labId: r._id, total: r.total }))
+      const byType = (data.byType||[]).map(r=>({ name: r._id, value: r.total }))
+      const topItems = (data.topItems||[])
+      const byCategory = (data.byCategory||[]).map(r=>({ name: r._id, total: r.total }))
+      setMaintenance({ monthlyCost, byLab, byType, topItems, byCategory })
+    }
+    loadSummary()
+  }, [sumStart, sumEnd, sumLabId])
 
   const totals = items.reduce((acc, it) => {
     acc.total += it.totalCount
@@ -53,6 +72,88 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
+      <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Maintenance Analytics</h3>
+          <div className="flex items-center gap-2 text-sm">
+            <select className="border rounded px-2 py-1 bg-white" value={sumLabId} onChange={e=>setSumLabId(e.target.value)}>
+              <option value="">All Labs</option>
+              {labs.map(l => (<option key={l._id} value={l._id}>{l.name}</option>))}
+            </select>
+            <input type="date" className="border rounded px-2 py-1" value={sumStart} onChange={e=>setSumStart(e.target.value)} />
+            <span>to</span>
+            <input type="date" className="border rounded px-2 py-1" value={sumEnd} onChange={e=>setSumEnd(e.target.value)} />
+            <button onClick={async()=>{
+              const { data } = await api.get('/maintenance/template', { responseType: 'blob' })
+              const url = window.URL.createObjectURL(new Blob([data]))
+              const link = document.createElement('a')
+              link.href = url
+              link.setAttribute('download', 'maintenance-template.csv')
+              document.body.appendChild(link)
+              link.click()
+              link.remove()
+            }} className="ml-2 px-3 py-1.5 rounded border">Download Template</button>
+            <label className="ml-2 inline-flex items-center gap-2 px-3 py-1.5 rounded border cursor-pointer">
+              <span>Import CSV</span>
+              <input type="file" accept=".csv" className="hidden" onChange={async(e)=>{
+                const f = e.target.files?.[0]
+                if (!f) return
+                const form = new FormData()
+                form.append('file', f)
+                try {
+                  await api.post('/maintenance/import', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+                  // refresh
+                  const params = { start: sumStart, end: sumEnd }
+                  if (sumLabId) params.labId = sumLabId
+                  await api.get('/maintenance/summary', { params })
+                  e.target.value = ''
+                } catch (err) {
+                  console.error(err)
+                }
+              }} />
+            </label>
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={maintenance.monthlyCost} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="ym" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#2563eb" name="Total Cost" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip />
+                <Legend />
+                <Pie data={maintenance.byType} dataKey="value" nameKey="name" outerRadius={80}>
+                  {maintenance.byType.map((entry, index) => (
+                    <Cell key={`cell-type-${index}`} fill={["#2563eb","#16a34a","#f59e0b","#ef4444","#6b7280"][index%5]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={maintenance.byCategory} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#10b981" name="By Category" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
           <div className="flex items-center justify-between">

@@ -5,13 +5,14 @@ import { connectDB } from '../config/db.js';
 import Lab from '../models/Lab.js';
 import User from '../models/User.js';
 import Item from '../models/Item.js';
+import MaintenanceRecord from '../models/MaintenanceRecord.js';
 
 dotenv.config();
 
 const run = async () => {
   await connectDB();
 
-  await Promise.all([User.deleteMany({}), Lab.deleteMany({}), Item.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), Lab.deleteMany({}), Item.deleteMany({}), MaintenanceRecord.deleteMany({})]);
 
   const labs = await Lab.insertMany([
     { name: 'Computer Lab 1', description: 'Main CS Lab' },
@@ -47,6 +48,30 @@ const run = async () => {
   }
 
   await Item.insertMany(itemsToInsert);
+
+  const allItems = await Item.find({});
+  const types = ['repair','calibration','service','replacement','other'];
+  const now = new Date();
+  const recs = [];
+  for (const it of allItems) {
+    const n = rand(2, 8);
+    for (let i = 0; i < n; i++) {
+      const monthsAgo = rand(0, 11);
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - monthsAgo);
+      d.setDate(rand(1, 28));
+      recs.push({
+        labId: it.labId,
+        itemId: it._id,
+        date: d,
+        cost: Math.round((rand(200, 5000) + Math.random()) * 100) / 100,
+        type: types[rand(0, types.length - 1)],
+        vendor: 'Sample Vendor',
+        notes: 'Auto generated'
+      });
+    }
+  }
+  if (recs.length) await MaintenanceRecord.insertMany(recs);
 
   console.log('Seed completed');
   await mongoose.connection.close();
