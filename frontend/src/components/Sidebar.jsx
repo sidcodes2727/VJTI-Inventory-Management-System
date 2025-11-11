@@ -7,9 +7,9 @@ const NavLink = ({ to, label, icon: IconEl }) => {
   const { pathname } = useLocation()
   const active = pathname === to
   return (
-    <Link to={to} className={`group flex items-center gap-2 px-4 py-2 rounded transition-colors ${active ? 'bg-gray-100 text-vjtiBlue font-medium' : 'text-gray-700 hover:bg-gray-100'}`}>
-      {IconEl ? <IconEl className={`transition-transform group-hover:scale-110 ${active ? 'text-vjtiBlue' : 'text-gray-500'}`} /> : null}
-      <span>{label}</span>
+    <Link to={to} className={`group flex items-center gap-2 px-4 py-2 rounded transition-colors ${active ? 'bg-gray-100 text-vjtiBlue font-medium border-l-2 border-vjtiBlue pl-[14px]' : 'text-gray-700 hover:bg-gray-50'}`}>
+      {IconEl ? <IconEl className={`h-5 w-5 transition-transform group-hover:scale-110 ${active ? 'text-vjtiBlue' : 'text-gray-500'}`} /> : null}
+      <span className="text-sm">{label}</span>
     </Link>
   )
 }

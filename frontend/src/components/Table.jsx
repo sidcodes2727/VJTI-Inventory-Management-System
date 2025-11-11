@@ -1,19 +1,19 @@
 export default function Table({ columns, data }) {
   return (
-    <div className="overflow-auto border rounded bg-white">
+    <div className="overflow-x-auto border rounded-xl bg-white shadow-sm">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 text-left">
+        <thead className="text-left sticky top-0 bg-white z-10 border-b">
           <tr>
             {columns.map((c) => (
-              <th key={c.key} className="px-4 py-2 font-semibold text-gray-700 border-b">{c.title}</th>
+              <th key={c.key} className="px-4 py-3 font-semibold text-gray-700">{c.title}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.map((row, i) => (
-            <tr key={i} className="even:bg-gray-50/60">
+            <tr key={i} className="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
               {columns.map((c) => (
-                <td key={c.key} className="px-4 py-2 border-b align-top">{c.render ? c.render(row[c.key], row) : row[c.key]}</td>
+                <td key={c.key} className="px-4 py-3 border-b align-top">{c.render ? c.render(row[c.key], row) : row[c.key]}</td>
               ))}
             </tr>
           ))}

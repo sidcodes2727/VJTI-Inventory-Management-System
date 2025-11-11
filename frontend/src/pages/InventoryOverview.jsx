@@ -77,10 +77,10 @@ export default function InventoryOverview() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h2 className="text-xl font-semibold">Inventory Overview</h2>
         {user.role === 'admin' && (
-          <select className="border rounded px-3 py-2 bg-white" value={selectedLab} onChange={(e)=>setSelectedLab(e.target.value)}>
+          <select className="border rounded px-3 py-2 bg-white w-full sm:w-auto" value={selectedLab} onChange={(e)=>setSelectedLab(e.target.value)}>
             <option value="">All Labs</option>
             {labs.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
           </select>
