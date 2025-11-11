@@ -1,5 +1,9 @@
 import Joi from 'joi';
 import Item from '../models/Item.js';
+import Lab from '../models/Lab.js';
+import ExcelJS from 'exceljs';
+import { stringify } from 'csv-stringify';
+import { parse as parseCsv } from 'csv-parse/sync';
 
 const itemSchema = Joi.object({
   name: Joi.string().required(),
@@ -111,4 +115,134 @@ export const transferStock = async (req, res) => {
   }
 
   res.json({ message: 'Transfer complete', from: source, to: dest });
+};
+
+// Export items as CSV or XLSX
+export const exportItems = async (req, res) => {
+  const format = (req.query.format || 'csv').toLowerCase();
+  const filter = {};
+  if (req.user.role === 'lab') {
+    filter.labId = req.user.labId;
+  } else if (req.query.labId) {
+    filter.labId = req.query.labId;
+  }
+
+  const items = await Item.find(filter).populate('labId', 'name');
+  const rows = items.map(it => ({
+    name: it.name,
+    category: it.category,
+    totalCount: it.totalCount,
+    workingCount: it.workingCount,
+    damagedCount: it.damagedCount,
+    lostCount: it.lostCount,
+    labId: String(it.labId?._id || it.labId),
+    labName: it.labId?.name || ''
+  }));
+
+  const dateStr = new Date().toISOString().slice(0,10);
+  if (format === 'xlsx') {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Items');
+    ws.columns = [
+      { header: 'name', key: 'name' },
+      { header: 'category', key: 'category' },
+      { header: 'totalCount', key: 'totalCount' },
+      { header: 'workingCount', key: 'workingCount' },
+      { header: 'damagedCount', key: 'damagedCount' },
+      { header: 'lostCount', key: 'lostCount' },
+      { header: 'labId', key: 'labId' },
+      { header: 'labName', key: 'labName' }
+    ];
+    ws.addRows(rows);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="items-${dateStr}.xlsx"`);
+    await wb.xlsx.write(res);
+    return res.end();
+  }
+
+  // default CSV
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="items-${dateStr}.csv"`);
+  const stringifier = stringify({ header: true, columns: ['name','category','totalCount','workingCount','damagedCount','lostCount','labId','labName'] });
+  rows.forEach(r => stringifier.write(r));
+  stringifier.end();
+  stringifier.pipe(res);
+};
+
+// Import items from CSV or XLSX (admin only)
+export const importItems = async (req, res) => {
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'File is required' });
+
+  const filename = req.file.originalname || '';
+  const lower = filename.toLowerCase();
+
+  let records = [];
+  try {
+    if (lower.endsWith('.xlsx')) {
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(req.file.buffer);
+      const ws = wb.worksheets[0];
+      if (!ws) return res.status(400).json({ message: 'No worksheet found' });
+      const headers = ws.getRow(1).values.map(v => (typeof v === 'object' && v?.richText ? v.richText.map(rt=>rt.text).join('') : String(v || ''))).slice(1);
+      for (let i = 2; i <= ws.rowCount; i++) {
+        const row = ws.getRow(i).values.slice(1);
+        const rec = {};
+        headers.forEach((h, idx) => { rec[h] = row[idx]; });
+        records.push(rec);
+      }
+    } else {
+      const text = req.file.buffer.toString('utf8');
+      records = parseCsv(text, { columns: true, skip_empty_lines: true });
+    }
+  } catch (e) {
+    return res.status(400).json({ message: 'Failed to parse file' });
+  }
+
+  let created = 0, updated = 0;
+  const errors = [];
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    try {
+      // Support labId or labName
+      let labId = r.labId;
+      if (!labId && r.labName) {
+        const lab = await Lab.findOne({ name: r.labName });
+        if (!lab) throw new Error(`Lab not found: ${r.labName}`);
+        labId = String(lab._id);
+      }
+
+      const payload = {
+        name: String(r.name || '').trim(),
+        category: String(r.category || '').trim(),
+        totalCount: Number(r.totalCount ?? 0),
+        workingCount: Number(r.workingCount ?? 0),
+        damagedCount: Number(r.damagedCount ?? 0),
+        lostCount: Number(r.lostCount ?? 0),
+        labId: String(labId || '').trim()
+      };
+
+      const { error, value } = itemSchema.validate(payload);
+      if (error) throw new Error(error.message);
+      if (value.workingCount + value.damagedCount + value.lostCount !== value.totalCount)
+        throw new Error('Counts must add up to totalCount');
+
+      const existing = await Item.findOne({ name: value.name, category: value.category, labId: value.labId });
+      if (existing) {
+        existing.totalCount = value.totalCount;
+        existing.workingCount = value.workingCount;
+        existing.damagedCount = value.damagedCount;
+        existing.lostCount = value.lostCount;
+        await existing.save();
+        updated++;
+      } else {
+        await Item.create(value);
+        created++;
+      }
+    } catch (e) {
+      errors.push({ row: i + 2, message: e.message || 'Invalid row' });
+    }
+  }
+
+  res.json({ created, updated, errors });
 };

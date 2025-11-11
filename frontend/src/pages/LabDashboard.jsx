@@ -46,7 +46,21 @@ export default function LabDashboard() {
     <Layout>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
-          <h2 className="text-lg font-semibold mb-3 text-gray-900">My Inventory</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">My Inventory</h2>
+            <button onClick={async ()=>{
+              try {
+                const { data } = await api.get('/items/export', { params: { format: 'csv' }, responseType: 'blob' })
+                const url = window.URL.createObjectURL(new Blob([data]))
+                const link = document.createElement('a')
+                link.href = url
+                link.setAttribute('download', 'my-items.csv')
+                document.body.appendChild(link)
+                link.click()
+                link.remove()
+              } catch (e) { toast.error(e?.response?.data?.message || 'Export failed') }
+            }} className="px-2 py-1 rounded border text-sm">Export CSV</button>
+          </div>
           {loading ? (
             <div className="h-40 grid place-items-center text-gray-500 text-sm">Loading...</div>
           ) : (

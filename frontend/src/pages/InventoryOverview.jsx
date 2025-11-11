@@ -48,6 +48,8 @@ export default function InventoryOverview() {
   const [working, setWorking] = useState(0)
   const [damaged, setDamaged] = useState(0)
   const [lost, setLost] = useState(0)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importFile, setImportFile] = useState(null)
 
   const openEdit = (it) => {
     setEditItem(it)
@@ -79,16 +81,49 @@ export default function InventoryOverview() {
     <Layout>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <h2 className="text-2xl font-semibold tracking-tight text-gray-900">Inventory Overview</h2>
-        {user.role === 'admin' && (
-          <select
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-vjtiGold focus:ring-2 focus:ring-vjtiGold/60 w-full sm:w-auto"
-            value={selectedLab}
-            onChange={(e)=>setSelectedLab(e.target.value)}
-          >
-            <option value="">All Labs</option>
-            {labs.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
-          </select>
-        )}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {user.role === 'admin' && (
+            <select
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-vjtiGold focus:ring-2 focus:ring-vjtiGold/60"
+              value={selectedLab}
+              onChange={(e)=>setSelectedLab(e.target.value)}
+            >
+              <option value="">All Labs</option>
+              {labs.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
+            </select>
+          )}
+          <button onClick={async ()=>{
+            try {
+              const params = {};
+              if (user.role === 'admin' && selectedLab) params.labId = selectedLab;
+              const { data } = await api.get('/items/export', { params: { ...params, format: 'csv' }, responseType: 'blob' });
+              const url = window.URL.createObjectURL(new Blob([data]));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', 'items.csv');
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            } catch (e) { toast.error(e?.response?.data?.message || 'Export failed') }
+          }} className="px-3 py-2 rounded border">Export CSV</button>
+          <button onClick={async ()=>{
+            try {
+              const params = {};
+              if (user.role === 'admin' && selectedLab) params.labId = selectedLab;
+              const { data } = await api.get('/items/export', { params: { ...params, format: 'xlsx' }, responseType: 'blob' });
+              const url = window.URL.createObjectURL(new Blob([data]));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', 'items.xlsx');
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            } catch (e) { toast.error(e?.response?.data?.message || 'Export failed') }
+          }} className="px-3 py-2 rounded border">Export XLSX</button>
+          {user.role === 'admin' && (
+            <button onClick={()=>setImportOpen(true)} className="px-3 py-2 rounded bg-vjtiBlue text-white">Import</button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl p-5 shadow-sm ring-1 ring-black/5">
@@ -135,6 +170,37 @@ export default function InventoryOverview() {
               <input type="number" min={0} className="w-full border rounded px-3 py-2" value={lost} onChange={e=>setLost(e.target.value)} />
             </div>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={importOpen}
+        onClose={()=>{ setImportOpen(false); setImportFile(null) }}
+        title="Import Items (CSV/XLSX)"
+        footer={
+          <>
+            <button onClick={()=>{ setImportOpen(false); setImportFile(null) }} className="px-3 py-1.5 rounded border">Cancel</button>
+            <button onClick={async ()=>{
+              if (!importFile) return toast.error('Select a file')
+              const form = new FormData()
+              form.append('file', importFile)
+              try {
+                const { data } = await api.post('/items/import', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+                toast.success(`Imported: ${data.created} created, ${data.updated} updated${data.errors?.length?`, ${data.errors.length} errors`:''}`)
+                if (data.errors?.length) console.warn('Import errors', data.errors)
+                setImportOpen(false)
+                setImportFile(null)
+                loadItems()
+              } catch (e) {
+                toast.error(e?.response?.data?.message || 'Import failed')
+              }
+            }} className="px-3 py-1.5 rounded bg-vjtiBlue text-white">Upload</button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">Accepted: .csv or .xlsx. Columns: name, category, totalCount, workingCount, damagedCount, lostCount, labId or labName.</p>
+          <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={e=>setImportFile(e.target.files?.[0]||null)} />
         </div>
       </Modal>
     </Layout>
